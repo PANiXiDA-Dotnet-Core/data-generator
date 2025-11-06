@@ -1,0 +1,14 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop, dev, stage ]
+  pull_request:
+
+jobs:
+  format:
+    uses: PANiXiDA-Infrastructure/ci-cd/.github/workflows/dotnet-format.yml@main
+    with:
+      project_folder: .
+    secrets:
+      GH_TOKEN: ${{ secrets.CI_TEMPLATES_TOKEN }}
