@@ -131,6 +131,26 @@ public sealed class DictionaryGeneratorTests
         generated.StringComplexDictionary.Values.Should().OnlyContain(item => item != null && !string.IsNullOrWhiteSpace(item.Name));
     }
 
+    [Fact(DisplayName = "DictionaryGenerator should generate not empty SortedDictionary<string,int>")]
+    public void Create_SortedStringIntDictionary()
+    {
+        var generated = new DataFacade().Create<DictionaryTestModel>();
+
+        generated.SortedStringIntDictionary.Should().NotBeNull().And.NotBeEmpty();
+        generated.SortedStringIntDictionary.Keys.Should().OnlyContain(item => !string.IsNullOrWhiteSpace(item));
+        generated.SortedStringIntDictionary.Values.Should().OnlyContain(item => item != default);
+    }
+
+    [Fact(DisplayName = "DictionaryGenerator should generate not empty ConcurrentDictionary<string,double>")]
+    public void Create_ConcurrentStringDoubleDictionary()
+    {
+        var generated = new DataFacade().Create<DictionaryTestModel>();
+
+        generated.ConcurrentStringDoubleDictionary.Should().NotBeNull().And.NotBeEmpty();
+        generated.ConcurrentStringDoubleDictionary.Keys.Should().OnlyContain(item => !string.IsNullOrWhiteSpace(item));
+        generated.ConcurrentStringDoubleDictionary.Values.Should().OnlyContain(item => !double.IsNaN(item) && !double.IsInfinity(item));
+    }
+
     [Fact(DisplayName = "DictionaryGenerator should generate not empty IDictionary<Guid,int>")]
     public void Create_GuidIntDictionary()
     {

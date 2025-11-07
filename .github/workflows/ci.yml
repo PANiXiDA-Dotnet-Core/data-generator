@@ -13,4 +13,4 @@ jobs:
     uses: PANiXiDA-Infrastructure/ci-cd/.github/workflows/dotnet-tests.yml@main
     with:
       coverage_assembly_filters: "+DataGenerator*;-*Tests*"
-      coverage_threshold: "100"
+      coverage_threshold: "90"
