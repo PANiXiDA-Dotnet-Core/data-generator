@@ -5,14 +5,9 @@ on:
     branches: [ main, master, develop, dev, stage ]
   pull_request:
 
-permissions:
-  id-token: write
-  contents: read
-  actions: read
-
 jobs:
   format:
     uses: PANiXiDA-Infrastructure/ci-cd/.github/workflows/dotnet-format.yml@main
     with:
       project_folder: .
-    secrets: inherit
+      
