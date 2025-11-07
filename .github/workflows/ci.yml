@@ -8,3 +8,9 @@ on:
 jobs:
   format:
     uses: PANiXiDA-Infrastructure/ci-cd/.github/workflows/dotnet-format.yml@main
+
+  tests:
+    uses: PANiXiDA-Infrastructure/ci-cd/.github/workflows/dotnet-tests.yml@main
+    with:
+      coverage_assembly_filters: "+TestDataGenerator*;-*Tests*"
+      coverage_threshold: "100"
