@@ -11,9 +11,9 @@ namespace DataGenerator;
 
 public sealed class DataFacade
 {
-    private IFixture Fixture { get; }
+    private IFixture Fixture { get; }               
 
-    public DataFacade(IFixture fixture)
+        public DataFacade(IFixture fixture)
     {
         Fixture = fixture;
     }
