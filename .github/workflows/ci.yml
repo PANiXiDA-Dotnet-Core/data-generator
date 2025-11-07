@@ -6,6 +6,7 @@ on:
   pull_request:
 
 permissions:
+  id-token: write
   contents: read
   actions: read
 
@@ -14,5 +15,4 @@ jobs:
     uses: PANiXiDA-Infrastructure/ci-cd/.github/workflows/dotnet-format.yml@main
     with:
       project_folder: .
-    secrets:
-      GH_TOKEN: ${{ secrets.CI_TEMPLATES_TOKEN }}
+    secrets: inherit
