@@ -2,12 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, master, develop, dev, stage ]
+    branches: [ main ]
   pull_request:
 
 jobs:
   format:
     uses: PANiXiDA-Infrastructure/ci-cd/.github/workflows/dotnet-format.yml@main
-    with:
-      project_folder: .
-      
