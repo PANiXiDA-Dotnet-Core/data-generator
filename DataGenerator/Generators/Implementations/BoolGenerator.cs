@@ -25,13 +25,13 @@ internal sealed class BoolGenerator(Faker faker) : ITypeDataGenerator
     {
         var name = propertyName.ToLowerInvariant();
 
-        if (name.StartsWith("is") || name.StartsWith("has") || name.Contains("enabled") || name.Contains("active"))
-        {
-            return faker.Random.Bool(0.7f);
-        }
         if (name.Contains("deleted") || name.Contains("disabled") || name.Contains("blocked"))
         {
             return faker.Random.Bool(0.1f);
+        }
+        if (name.StartsWith("is") || name.StartsWith("has") || name.Contains("enabled") || name.Contains("active"))
+        {
+            return faker.Random.Bool(0.7f);
         }
 
         return faker.Random.Bool();

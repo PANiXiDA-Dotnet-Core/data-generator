@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Concurrent;
 
 using AutoFixture.Kernel;
 
@@ -18,45 +19,43 @@ internal sealed class DictionaryGenerator(Faker faker) : ITypeDataGenerator
         {
             return false;
         }
+        if (ShouldReturnEmptyDictionary(keyType!, valueType!, context))
+        {
+            value = CreateEmptyDictionary(type, keyType!, valueType!);
+            return true;
+        }
 
         var count = faker.Random.Int(2, 5);
-        var dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType!, valueType!);
-        var dictionary = (IDictionary)Activator.CreateInstance(dictionaryType)!;
+        var dictionaryInstance = CreateEmptyDictionary(type, keyType!, valueType!)!;
 
-        int safety = 0;
-        while (dictionary.Count < count && safety < count * 4)
+        if (dictionaryInstance.GetType().IsGenericType && dictionaryInstance.GetType().GetGenericTypeDefinition() == typeof(ConcurrentDictionary<,>))
         {
-            var key = GenerateKey(keyType!, context);
-            if (key is null)
-            {
-                safety++;
-                continue;
-            }
-
-            var val = context.Resolve(valueType!);
-
-            if (!dictionary.Contains(key))
-            {
-                dictionary.Add(key, val);
-            }
-
-            safety++;
+            FillConcurrent((dynamic)dictionaryInstance, keyType!, valueType!, context, count);
+            value = dictionaryInstance;
+            return true;
         }
-        value = dictionary;
+        else
+        {
+            var dictionary = (IDictionary)dictionaryInstance;
+            FillDictionary(dictionary, keyType!, valueType!, context, count);
+            value = dictionary;
+        }
 
         return true;
     }
 
-    private static bool TryGetDictionaryTypes(Type type, out Type? keyType, out Type? valueType)
+    public static bool TryGetDictionaryTypes(Type type, out Type? keyType, out Type? valueType)
     {
         keyType = valueType = null;
 
         if (type.IsGenericType)
         {
             var genericTypeDefinition = type.GetGenericTypeDefinition();
-            if (genericTypeDefinition == typeof(IDictionary<,>) ||
-                genericTypeDefinition == typeof(Dictionary<,>) ||
-                genericTypeDefinition == typeof(IReadOnlyDictionary<,>))
+            if (genericTypeDefinition == typeof(Dictionary<,>) ||
+                genericTypeDefinition == typeof(IDictionary<,>) ||
+                genericTypeDefinition == typeof(IReadOnlyDictionary<,>) ||
+                genericTypeDefinition == typeof(SortedDictionary<,>) ||
+                genericTypeDefinition == typeof(ConcurrentDictionary<,>))
             {
                 var args = type.GetGenericArguments();
                 keyType = args[0];
@@ -75,6 +74,7 @@ internal sealed class DictionaryGenerator(Faker faker) : ITypeDataGenerator
                     var args = @interface.GetGenericArguments();
                     keyType = args[0];
                     valueType = args[1];
+
                     return true;
                 }
             }
@@ -85,11 +85,13 @@ internal sealed class DictionaryGenerator(Faker faker) : ITypeDataGenerator
 
     private object? GenerateKey(Type keyType, ISpecimenContext context)
     {
-        var t = Nullable.GetUnderlyingType(keyType) ?? keyType;
+        var type = Nullable.GetUnderlyingType(keyType) ?? keyType;
 
-        var gen = CreateScalarGenerator(t);
-        if (gen is not null && gen.TryGenerate(t, name: null, context, out var value))
+        var generator = CreateScalarGenerator(type);
+        if (generator is not null && generator.TryGenerate(type, name: null, context, out var value))
+        {
             return value;
+        }
 
         return context.Resolve(keyType);
     }
@@ -133,5 +135,98 @@ internal sealed class DictionaryGenerator(Faker faker) : ITypeDataGenerator
         }
 
         return null;
+    }
+
+    private static bool ShouldReturnEmptyDictionary(Type keyType, Type valueType, ISpecimenContext context)
+    {
+        var keyProbe = context.Resolve(keyType);
+        if (keyProbe is OmitSpecimen or NoSpecimen)
+        {
+            return true;
+        }
+
+        var valProbe = context.Resolve(valueType);
+        return valProbe is OmitSpecimen or NoSpecimen;
+    }
+
+    private static object CreateEmptyDictionary(Type requestType, Type keyType, Type valueType)
+    {
+        if (!requestType.IsInterface && !requestType.IsAbstract)
+        {
+            return Activator.CreateInstance(requestType)!;
+        }
+        if (requestType.GetGenericTypeDefinition() == typeof(SortedDictionary<,>))
+        {
+            return Activator.CreateInstance(typeof(SortedDictionary<,>).MakeGenericType(keyType, valueType))!;
+        }
+        if (requestType.GetGenericTypeDefinition() == typeof(ConcurrentDictionary<,>))
+        {
+            return Activator.CreateInstance(typeof(ConcurrentDictionary<,>).MakeGenericType(keyType, valueType))!;
+        }
+        if (requestType.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))
+        {
+            return Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(keyType, valueType))!;
+        }
+        if (requestType.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+        {
+            return Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(keyType, valueType))!;
+        }
+
+        return Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(keyType, valueType))!;
+    }
+
+    private void FillDictionary(IDictionary dictionary, Type keyType, Type valueType, ISpecimenContext context, int count)
+    {
+        FillDictionaryCore(
+            getCount: () => dictionary.Count,
+            generateKey: () => GenerateKey(keyType, context),
+            generateValue: () => context.Resolve(valueType),
+            tryAdd: (key, value) =>
+            {
+                if (!dictionary.Contains(key))
+                {
+                    dictionary.Add(key, value);
+                    return true;
+                }
+                return false;
+            },
+            count: count
+        );
+    }
+
+    private void FillConcurrent<TKey, TValue>(ConcurrentDictionary<TKey, TValue> dictionary, Type keyType, Type valueType, ISpecimenContext context, int count)
+        where TKey : notnull
+    {
+        FillDictionaryCore(
+            getCount: () => dictionary.Count,
+            generateKey: () => GenerateKey(keyType, context),
+            generateValue: () => context.Resolve(valueType),
+            tryAdd: (key, value) => dictionary.TryAdd((TKey)key!, (TValue)value!),
+            count: count
+        );
+    }
+
+    private static void FillDictionaryCore(
+        Func<int> getCount,
+        Func<object?> generateKey,
+        Func<object?> generateValue,
+        Func<object, object?, bool> tryAdd,
+        int count)
+    {
+        int safety = 0;
+        while (getCount() < count && safety < count * 4)
+        {
+            var key = generateKey();
+            if (key is null)
+            {
+                safety++;
+                continue;
+            }
+
+            var value = generateValue();
+            tryAdd(key, value);
+
+            safety++;
+        }
     }
 }

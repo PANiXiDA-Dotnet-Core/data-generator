@@ -17,7 +17,7 @@ internal sealed class NumericGenerator(Faker faker) : ITypeDataGenerator
         }
         if (type == typeof(uint))
         {
-            value = name is not null ? GenerateSmartInt(name) : faker.Random.Int(0, 10_000);
+            value = name is not null ? (uint)GenerateSmartInt(name) : faker.Random.UInt(0, 10_000);
             return true;
         }
         if (type == typeof(long))
@@ -27,17 +27,17 @@ internal sealed class NumericGenerator(Faker faker) : ITypeDataGenerator
         }
         if (type == typeof(ulong))
         {
-            value = (ulong)faker.Random.Long(0, long.MaxValue);
+            value = faker.Random.ULong(0, long.MaxValue);
             return true;
         }
         if (type == typeof(short))
         {
-            value = (short)faker.Random.Int(short.MinValue, short.MaxValue);
+            value = faker.Random.Short(short.MinValue, short.MaxValue);
             return true;
         }
         if (type == typeof(ushort))
         {
-            value = (ushort)faker.Random.Int(0, ushort.MaxValue);
+            value = faker.Random.UShort(0, ushort.MaxValue);
             return true;
         }
         if (type == typeof(byte))
@@ -47,7 +47,7 @@ internal sealed class NumericGenerator(Faker faker) : ITypeDataGenerator
         }
         if (type == typeof(sbyte))
         {
-            value = (sbyte)faker.Random.Int(sbyte.MinValue, sbyte.MaxValue);
+            value = faker.Random.SByte(sbyte.MinValue, sbyte.MaxValue);
             return true;
         }
         if (type == typeof(double))
@@ -57,7 +57,7 @@ internal sealed class NumericGenerator(Faker faker) : ITypeDataGenerator
         }
         if (type == typeof(float))
         {
-            value = (float)Math.Round(faker.Random.Double(0, 100_000), 4);
+            value = (float)Math.Round(faker.Random.Float(0, 100_000), 4);
             return true;
         }
         if (type == typeof(decimal))

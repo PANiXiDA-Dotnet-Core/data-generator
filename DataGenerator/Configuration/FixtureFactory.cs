@@ -23,6 +23,7 @@ internal static class FixtureFactory
 
         fixture.Customize(new DataGenerationCustomization(
             locale,
+            usedSeed,
             faker => { faker.Random = new Randomizer(usedSeed); configureFaker?.Invoke(faker); },
             recursionDepth));
 

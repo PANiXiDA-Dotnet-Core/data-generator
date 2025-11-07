@@ -11,14 +11,17 @@ namespace DataGenerator.Core;
 
 internal sealed class DataGenerator : ISpecimenBuilder
 {
+    private const float NullProbability = 0.2f;
+
     private readonly IReadOnlyList<ITypeDataGenerator> _generators;
     private readonly Faker _faker;
+    private readonly NullabilityInfoContext _nullabilityContext;
 
-    public DataGenerator(string locale, Action<Faker>? configureFaker)
+    public DataGenerator(string locale, int seed, Action<Faker>? configureFaker)
     {
         _faker = new Faker(locale)
         {
-            DateTimeReference = new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            DateTimeReference = DateTime.UnixEpoch.AddSeconds(seed)
         };
         configureFaker?.Invoke(_faker);
 
@@ -36,6 +39,8 @@ internal sealed class DataGenerator : ISpecimenBuilder
             new EnumerableGenerator(_faker),
             new DictionaryGenerator(_faker),
         ];
+
+        _nullabilityContext = new();
     }
 
     public object Create(object request, ISpecimenContext context)
@@ -57,6 +62,10 @@ internal sealed class DataGenerator : ISpecimenBuilder
         var type = propertyInfo.PropertyType;
         var name = propertyInfo.Name;
 
+        if (ShouldGenerateNull(propertyInfo, type))
+        {
+            return null!;
+        }
         if (TryGenerateKnown(type, name, context, out var value))
         {
             return value!;
@@ -75,20 +84,49 @@ internal sealed class DataGenerator : ISpecimenBuilder
         return new NoSpecimen();
     }
 
-    private bool TryGenerateKnown(Type type, string? name, ISpecimenContext context, out object? result)
+    private bool ShouldGenerateNull(PropertyInfo property, Type type)
+    {
+        if (TryGenerateNullForNullableValueType(type))
+        {
+            return true;
+        }
+        if (TryGenerateNullForNullableReferenceType(property, type))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryGenerateNullForNullableValueType(Type type)
     {
         var underlying = Nullable.GetUnderlyingType(type);
         if (underlying != null)
         {
-            if (_faker.Random.Bool(0.2f))
-            {
-                result = null;
-                return true;
-            }
-
-            type = underlying;
+            return _faker.Random.Bool(NullProbability);
         }
 
+        return false;
+    }
+
+    private bool TryGenerateNullForNullableReferenceType(PropertyInfo property, Type type)
+    {
+        if (type.IsValueType)
+        {
+            return false;
+        }
+
+        var info = _nullabilityContext.Create(property);
+        if (info.ReadState == NullabilityState.Nullable)
+        {
+            return _faker.Random.Bool(NullProbability);
+        }
+
+        return false;
+    }
+
+    private bool TryGenerateKnown(Type type, string? name, ISpecimenContext context, out object? result)
+    {
         foreach (var generator in _generators)
         {
             if (generator.TryGenerate(type, name, context, out result))

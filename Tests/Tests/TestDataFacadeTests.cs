@@ -6,7 +6,7 @@ using Tests.TestModels;
 
 using Xunit;
 
-namespace Tests;
+namespace Tests.Tests;
 
 public sealed class TestDataFacadeTests
 {
@@ -16,10 +16,10 @@ public sealed class TestDataFacadeTests
         var a = new DataFacade(seed: 123);
         var b = new DataFacade(seed: 123);
 
-        var user1 = a.Create<User>();
-        var user2 = b.Create<User>();
+        var generated1 = a.Create<SampleModel>();
+        var generated2 = b.Create<SampleModel>();
 
-        user1.Should().BeEquivalentTo(user2);
+        generated1.Should().BeEquivalentTo(generated2);
     }
 
     [Fact(DisplayName = "Different seeds should produce different results")]
@@ -28,9 +28,9 @@ public sealed class TestDataFacadeTests
         var a = new DataFacade(seed: 1);
         var b = new DataFacade(seed: 2);
 
-        var user1 = a.Create<User>();
-        var user2 = b.Create<User>();
+        var generated1 = a.Create<SampleModel>();
+        var generated2 = b.Create<SampleModel>();
 
-        user1.Should().NotBeEquivalentTo(user2);
+        generated1.Should().NotBeEquivalentTo(generated2);
     }
 }
