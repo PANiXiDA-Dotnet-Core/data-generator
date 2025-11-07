@@ -14,3 +14,11 @@ jobs:
     with:
       coverage_assembly_filters: "+DataGenerator*;-*Tests*"
       coverage_threshold: "90"
+
+  publish:
+    needs: 
+      - format
+      - tests
+    uses: PANiXiDA-Infrastructure/ci-cd/.github/workflows/dotnet-publish-global-nuget.yml@main
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
