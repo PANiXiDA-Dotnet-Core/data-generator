@@ -14,3 +14,4 @@ jobs:
     with:
       coverage_assembly_filters: "+DataGenerator*;-*Tests*"
       coverage_threshold: "100"
+      
