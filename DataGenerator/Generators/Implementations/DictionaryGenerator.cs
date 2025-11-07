@@ -47,7 +47,7 @@ internal sealed class DictionaryGenerator(Faker faker) : ITypeDataGenerator
         return true;
     }
 
-    private static bool TryGetDictionaryTypes(Type type, out Type? keyType, out Type? valueType)
+    public static bool TryGetDictionaryTypes(Type type, out Type? keyType, out Type? valueType)
     {
         keyType = valueType = null;
 

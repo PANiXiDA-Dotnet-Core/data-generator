@@ -18,6 +18,10 @@ internal sealed class EnumerableGenerator(Faker faker) : ITypeDataGenerator
         {
             return false;
         }
+        if (DictionaryGenerator.TryGetDictionaryTypes(type, out var _, out var _))
+        {
+            return false;
+        }
         if (!TryGetEnumerableElementType(type, out var elemType))
         {
             return false;
