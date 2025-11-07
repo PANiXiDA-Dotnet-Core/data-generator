@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Concurrent;
 
 using AutoFixture.Kernel;
 
@@ -18,10 +19,14 @@ internal sealed class DictionaryGenerator(Faker faker) : ITypeDataGenerator
         {
             return false;
         }
+        if (ShouldReturnEmptyDictionary(keyType!, valueType!, context))
+        {
+            value = CreateEmptyDictionary(type, keyType!, valueType!);
+            return true;
+        }
 
         var count = faker.Random.Int(2, 5);
-        var dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType!, valueType!);
-        var dictionary = (IDictionary)Activator.CreateInstance(dictionaryType)!;
+        var dictionary = (IDictionary)CreateEmptyDictionary(type, keyType!, valueType!)!;
 
         int safety = 0;
         while (dictionary.Count < count && safety < count * 4)
@@ -54,9 +59,11 @@ internal sealed class DictionaryGenerator(Faker faker) : ITypeDataGenerator
         if (type.IsGenericType)
         {
             var genericTypeDefinition = type.GetGenericTypeDefinition();
-            if (genericTypeDefinition == typeof(IDictionary<,>) ||
-                genericTypeDefinition == typeof(Dictionary<,>) ||
-                genericTypeDefinition == typeof(IReadOnlyDictionary<,>))
+            if (genericTypeDefinition == typeof(Dictionary<,>) ||
+                genericTypeDefinition == typeof(IDictionary<,>) ||
+                genericTypeDefinition == typeof(IReadOnlyDictionary<,>) ||
+                genericTypeDefinition == typeof(SortedDictionary<,>) ||
+                genericTypeDefinition == typeof(ConcurrentDictionary<,>))
             {
                 var args = type.GetGenericArguments();
                 keyType = args[0];
@@ -75,6 +82,7 @@ internal sealed class DictionaryGenerator(Faker faker) : ITypeDataGenerator
                     var args = @interface.GetGenericArguments();
                     keyType = args[0];
                     valueType = args[1];
+
                     return true;
                 }
             }
@@ -85,11 +93,13 @@ internal sealed class DictionaryGenerator(Faker faker) : ITypeDataGenerator
 
     private object? GenerateKey(Type keyType, ISpecimenContext context)
     {
-        var t = Nullable.GetUnderlyingType(keyType) ?? keyType;
+        var type = Nullable.GetUnderlyingType(keyType) ?? keyType;
 
-        var gen = CreateScalarGenerator(t);
-        if (gen is not null && gen.TryGenerate(t, name: null, context, out var value))
+        var generator = CreateScalarGenerator(type);
+        if (generator is not null && generator.TryGenerate(type, name: null, context, out var value))
+        {
             return value;
+        }
 
         return context.Resolve(keyType);
     }
@@ -133,5 +143,35 @@ internal sealed class DictionaryGenerator(Faker faker) : ITypeDataGenerator
         }
 
         return null;
+    }
+
+    private static bool ShouldReturnEmptyDictionary(Type keyType, Type valueType, ISpecimenContext context)
+    {
+        var keyProbe = context.Resolve(keyType);
+        if (keyProbe is OmitSpecimen or NoSpecimen)
+        {
+            return true;
+        }
+
+        var valProbe = context.Resolve(valueType);
+        return valProbe is OmitSpecimen or NoSpecimen;
+    }
+
+    private static object CreateEmptyDictionary(Type requestType, Type keyType, Type valueType)
+    {
+        if (!requestType.IsInterface && !requestType.IsAbstract)
+        {
+            return Activator.CreateInstance(requestType)!;
+        }
+        if (requestType.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))
+        {
+            return Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(keyType, valueType))!;
+        }
+        if (requestType.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+        {
+            return Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(keyType, valueType))!;
+        }
+
+        return Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(keyType, valueType))!;
     }
 }

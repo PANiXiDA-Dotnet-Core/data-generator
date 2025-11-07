@@ -6,7 +6,7 @@ using Tests.TestModels;
 
 using Xunit;
 
-namespace Tests;
+namespace Tests.Tests;
 
 public sealed class MutateTests
 {

@@ -26,6 +26,11 @@ internal sealed class EnumerableGenerator(Faker faker) : ITypeDataGenerator
         {
             return false;
         }
+        if (ShouldReturnEmptyCollection(elemType!, context))
+        {
+            value = CreateEmptyListOf(elemType!);
+            return true;
+        }
 
         var count = faker.Random.Int(2, 6);
         var listType = typeof(List<>).MakeGenericType(elemType!);
@@ -34,7 +39,10 @@ internal sealed class EnumerableGenerator(Faker faker) : ITypeDataGenerator
         for (int i = 0; i < count; i++)
         {
             var item = context.Resolve(elemType!);
-            if (item is null && !elemType!.IsValueType) continue;
+            if (item is null && !elemType!.IsValueType)
+            {
+                continue;
+            }
             list.Add(item);
         }
         value = list;
@@ -73,5 +81,16 @@ internal sealed class EnumerableGenerator(Faker faker) : ITypeDataGenerator
         }
 
         return false;
+    }
+
+    private static bool ShouldReturnEmptyCollection(Type elemType, ISpecimenContext context)
+    {
+        var probe = context.Resolve(elemType);
+        return probe is OmitSpecimen or NoSpecimen;
+    }
+
+    private static object CreateEmptyListOf(Type elemType)
+    {
+        return (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(elemType))!;
     }
 }

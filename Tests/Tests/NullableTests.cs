@@ -6,7 +6,7 @@ using Tests.TestModels;
 
 using Xunit;
 
-namespace Tests;
+namespace Tests.Tests;
 
 public sealed class NullableTests
 {
@@ -25,10 +25,10 @@ public sealed class NullableTests
             deletedDates.Add(generated.DeletedAt);
         }
 
-        middleNames.Should().Contain(x => x == null);
-        middleNames.Should().Contain(x => x != null);
+        middleNames.Should().Contain(item => item == null);
+        middleNames.Should().Contain(item => item != null);
 
-        deletedDates.Should().Contain(x => x == null);
-        deletedDates.Should().Contain(x => x != null);
+        deletedDates.Should().Contain(item => item == null);
+        deletedDates.Should().Contain(item => item != null);
     }
 }

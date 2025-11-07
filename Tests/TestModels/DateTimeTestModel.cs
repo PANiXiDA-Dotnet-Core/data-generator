@@ -2,19 +2,19 @@
 
 public sealed class DateTimeTestModel
 {
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-    public DateTime ModifiedAt { get; set; }
-    public DateTime? DeletedAt { get; set; }
+    public required DateTime CreatedAt { get; set; }
+    public required DateTime UpdatedAt { get; set; }
+    public required DateTime ModifiedAt { get; set; }
+    public required DateTime? DeletedAt { get; set; }
 
-    public DateTime Birthday { get; set; }
-    public DateTime Dob { get; set; }
+    public required DateTime Birthday { get; set; }
+    public required DateTime Dob { get; set; }
 
-    public DateTime RegisteredAt { get; set; }
-    public DateTime SignupDate { get; set; }
+    public required DateTime RegisteredAt { get; set; }
+    public required DateTime SignupDate { get; set; }
 
-    public TimeSpan Duration { get; set; }
+    public required TimeSpan Duration { get; set; }
 
-    public DateOnly BirthDateOnly { get; set; }
-    public TimeOnly WakeUpTime { get; set; }
+    public required DateOnly BirthDateOnly { get; set; }
+    public required TimeOnly WakeUpTime { get; set; }
 }

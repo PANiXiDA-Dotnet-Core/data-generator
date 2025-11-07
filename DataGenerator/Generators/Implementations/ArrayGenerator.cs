@@ -16,6 +16,11 @@ internal sealed class ArrayGenerator(Faker faker) : ITypeDataGenerator
         {
             return false;
         }
+        if (context.Resolve(elemType!) is OmitSpecimen or NoSpecimen)
+        {
+            value = Array.CreateInstance(elemType!, 0);
+            return true;
+        }
 
         var count = faker.Random.Int(2, 6);
         var array = Array.CreateInstance(elemType!, count);

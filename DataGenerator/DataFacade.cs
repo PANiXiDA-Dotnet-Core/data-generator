@@ -25,10 +25,12 @@ public sealed class DataFacade
         int? seed = null,
         Action<Faker>? configureFaker = null)
     {
+        var normalizedDepth = Math.Max(recursionDepth, 1);
+
         var scopeHash = string.IsNullOrEmpty(scope) ? 0 : CryptoHelper.GetHash(scope);
         var usedSeed = (seed ?? FixtureFactory.DefaultSeed) ^ scopeHash;
 
-        Fixture = FixtureFactory.Create(locale, usedSeed, recursionDepth, configureFaker);
+        Fixture = FixtureFactory.Create(locale, usedSeed, normalizedDepth, configureFaker);
     }
 
     public T Create<T>()
