@@ -28,10 +28,10 @@ internal sealed class DictionaryGenerator(Faker faker) : ITypeDataGenerator
         var count = faker.Random.Int(2, 5);
         var dictionaryInstance = CreateEmptyDictionary(type, keyType!, valueType!)!;
 
-        if (dictionaryInstance is ConcurrentDictionary<object, object> concurrentDict)
+        if (dictionaryInstance.GetType().IsGenericType && dictionaryInstance.GetType().GetGenericTypeDefinition() == typeof(ConcurrentDictionary<,>))
         {
-            FillConcurrent(concurrentDict, keyType!, valueType!, context, count);
-            value = concurrentDict;
+            FillConcurrent((dynamic)dictionaryInstance, keyType!, valueType!, context, count);
+            value = dictionaryInstance;
             return true;
         }
         else
@@ -155,6 +155,14 @@ internal sealed class DictionaryGenerator(Faker faker) : ITypeDataGenerator
         {
             return Activator.CreateInstance(requestType)!;
         }
+        if (requestType.GetGenericTypeDefinition() == typeof(SortedDictionary<,>))
+        {
+            return Activator.CreateInstance(typeof(SortedDictionary<,>).MakeGenericType(keyType, valueType))!;
+        }
+        if (requestType.GetGenericTypeDefinition() == typeof(ConcurrentDictionary<,>))
+        {
+            return Activator.CreateInstance(typeof(ConcurrentDictionary<,>).MakeGenericType(keyType, valueType))!;
+        }
         if (requestType.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))
         {
             return Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(keyType, valueType))!;
@@ -186,13 +194,14 @@ internal sealed class DictionaryGenerator(Faker faker) : ITypeDataGenerator
         );
     }
 
-    private void FillConcurrent(ConcurrentDictionary<object, object> dictionary, Type keyType, Type valueType, ISpecimenContext context, int count)
+    private void FillConcurrent<TKey, TValue>(ConcurrentDictionary<TKey, TValue> dictionary, Type keyType, Type valueType, ISpecimenContext context, int count)
+        where TKey : notnull
     {
         FillDictionaryCore(
             getCount: () => dictionary.Count,
             generateKey: () => GenerateKey(keyType, context),
             generateValue: () => context.Resolve(valueType),
-            tryAdd: (key, value) => dictionary.TryAdd(key!, value!),
+            tryAdd: (key, value) => dictionary.TryAdd((TKey)key!, (TValue)value!),
             count: count
         );
     }
